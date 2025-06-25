@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Artify Login</title>
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+
+  <main>
+    <div class="login-card">
+      <img src="https://i.pravatar.cc/80" alt="User avatar" class="profile-pic" />
+      <h2>Welcome Back!</h2>
+      <p>Sign in to access your digital art marketplace account.</p>
+
+      <form id="loginForm">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="your_username" required />
+
+        <div class="password-row">
+          <label>Password</label>
+          <a href="#">Forgot password?</a>
+        </div>
+        <input type="password" name="password" placeholder="********" required />
+
+        <button type="submit">Login</button>
+      </form>
+
+      <hr />
+      <p class="register-text">
+        Don’t have an account? <a href="register.html">Register Now</a>
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Artify. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const username = e.target.username.value;
+      const password = e.target.password.value;
+
+      const response = await fetch('http://localhost:3000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert("✅ Login successful!");
+        window.location.href = 'Home.html'; 
+      } else {
+        alert("❌ Login failed: " + result.error);
+      }
+    });
+  </script>
+
+</body>
+</html>
