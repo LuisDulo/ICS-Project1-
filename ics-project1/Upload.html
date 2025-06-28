@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Product</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>Upload Your Merchandise</h1>
+  <form action="/products/upload" method="POST" enctype="multipart/form-data">
+    <label>Title: <input type="text" name="title" required></label><br>
+
+    <label>Category:
+      <select name="category">
+        <option>Clothing</option>
+        <option>Accessories</option>
+        <option>Mugs</option>
+        <option>Stickers</option>
+      </select>
+    </label><br>
+
+    <label>Price: <input type="number" name="price" required step="0.01"></label><br>
+
+    <label>Description:<br>
+      <textarea name="description" rows="4" cols="50"></textarea>
+    </label><br>
+
+    <label>Stock Count: <input type="number" name="stockCount" required></label><br>
+
+    <label>Upload Image: <input type="file" name="productImage" accept="image/*" required></label><br>
+
+    <label>Brand ID (hidden or auto-authenticated):
+      <input type="text" name="brandId" value="<%= brandId %>" readonly>
+    </label><br>
+
+    <button type="submit">Upload Product</button>
+  </form>
+</body>
+</html>

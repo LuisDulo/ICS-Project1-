@@ -1,31 +1,68 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const router = express.Router();
+const Product = require('./models/Product');
 const bcrypt = require('bcryptjs');
-const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
+mongoose.set('strictQuery', true); // harmless use that also improves query behavior
 require('dotenv').config();
+
+const path = require('path');
 
 const app = express();
 const PORT = 3000;
+const productRoutes = require('./routes/products');
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static('public'));
+
 
 let users; // MongoDB collection reference
 
 // MongoDB Connection
-MongoClient.connect(process.env.MONGO_URI, { useNewUrlParser: true })
-  .then(client => {
-    const db = client.db('artify'); // change to your DB name
-    users = db.collection('users');
-    console.log('✅ Connected to MongoDB');
+// ✅ Connect to MongoDB via Mongoose
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(async () => {
+  console.log('✅ Connected to MongoDB via Mongoose');
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
-    });
-  })
-  .catch(err => console.error('❌ MongoDB connection failed:', err));
+  // Setup MongoClient separately if you still need it for `users`:
+  const { MongoClient } = require('mongodb');
+  const client = new MongoClient(process.env.MONGO_URI);
+  await client.connect();
+  const db = client.db('artify');
+  users = db.collection('users');
+
+//routes
+  app.use('/', productRoutes);
+  router.get('/marketplace', async (req, res) => {
+    try {
+      const products = await Product.find({});
+      res.render('marketplace', { products });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Failed to load marketplace');
+    }
+  });
+
+
+
+
+  // Start server after DB is ready
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  });
+}).catch(err => {
+  console.error('❌ MongoDB connection error:', err);
+});
 
 // Register Route
 app.post('/api/register', async (req, res) => {
@@ -55,6 +92,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+
 // Login Route
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
@@ -80,4 +118,5 @@ app.post('/api/login', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
+  
 });

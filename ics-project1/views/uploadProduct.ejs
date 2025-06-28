@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Product</title>
+ <style>/* Reset and base styling */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+/* Centering the page */
+main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4rem 1rem;
+  min-height: 100vh;
+}
+
+/* Upload Product Card */
+.upload-card {
+  background: white;
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+/* Headings */
+.upload-card h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.upload-card p {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 1.8rem;
+}
+
+/* Form Styling */
+form {
+  text-align: left;
+}
+
+form label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+  color: #444;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"],
+textarea {
+  width: 100%;
+  padding: 0.65rem;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* Button */
+button {
+  width: 100%;
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background 0.2s ease;
+}
+
+button:hover {
+  background-color: #4338ca;
+}
+
+/* Optional footer link */
+.upload-footer {
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.upload-footer a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+  <main>
+  <div class="upload-card">
+    <h1>Upload Product</h1>
+<form action="/products/upload" method="POST" enctype="multipart/form-data">
+  <input type="hidden" name="brandId" value="<%= brandId %>" />
+
+  <label>Title</label>
+  <input type="text" name="title" required>
+
+  <label>Category</label>
+  <input type="text" name="category" required>
+
+  <label>Price</label>
+  <input type="number" name="price" required>
+
+  <label>Description</label>
+  <textarea name="description"></textarea>
+
+  <label>Stock Count</label>
+  <input type="number" name="stockCount" required>
+
+  <label>Product Image</label>
+  <input type="file" name="productImage" accept="image/*" required>
+
+  <button type="submit">Upload</button>
+</form>
+
+</form>
+
+
+    <div class="upload-footer">
+      <p>Need help? <a href="/contact">Contact support</a></p>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,154 @@
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    background: #f9f9fb;
+    color: #222;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  
+  .nav a {
+    margin: 0 1rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .auth-buttons button {
+    margin-left: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .btn-primary {
+    background-color: #5b21b6;
+    color: white;
+  }
+  
+  .btn-outline {
+    background-color: transparent;
+    border: 2px solid #5b21b6;
+    color: #5b21b6;
+  }
+  
+  .profile-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 1rem;
+  }
+  
+  .user-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+  }
+  
+  .user-details h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+  
+  .user-details .role {
+    color: #666;
+    font-weight: 600;
+  }
+  
+  .connect-box {
+    margin-left: auto;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: 10px;
+    min-width: 200px;
+  }
+  
+  .full {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .about-section,
+  .skills-section,
+  .testimonials,
+  .artworks {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+  }
+  
+  .tags span {
+    display: inline-block;
+    background-color: #ede9fe;
+    color: #5b21b6;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    margin: 0.3rem;
+  }
+  
+  .testimonial-list blockquote {
+    background: #f3f3f7;
+    padding: 1rem;
+    border-left: 5px solid #5b21b6;
+    margin: 1rem 0;
+    border-radius: 5px;
+  }
+  
+  .testimonial-list footer {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
+  .art-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  
+  .art-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    text-align: center;
+  }
+  
+  .art-card img {
+    width: 100%;
+    display: block;
+    height: 180px;
+    object-fit: cover;
+  }
+  
+  .footer {
+    text-align: center;
+    padding: 1rem;
+    background: #fff;
+    color: #888;
+    font-size: 0.9rem;
+  }
+  

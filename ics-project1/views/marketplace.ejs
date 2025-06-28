@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Marketplace - ArtHub</title>
+  <link rel="stylesheet" href="/marketplace.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">🎨 ArtHub</div>
+    <nav>
+      <a href="/Home.html">Home</a>
+      <a href="/Canvas.html">Canvas Editor</a>
+      <a class="active" href="/marketplace">Marketplace</a>
+      <a href="/Designers.html">Hire a Designer</a>
+      <a href="#">User Profiles</a>
+    </nav>
+    <div class="user-icon">👤</div>
+  </header>
+
+  <section class="hero-banner">
+    <div class="hero-text">
+      <h1>Discover Your Next Masterpiece</h1>
+      <p>
+        Explore ArtHub’s curated collection of unique digital art products and merchandise from talented artists worldwide. Find inspiration, support creators, and personalize your world.
+      </p>
+    </div>
+  </section>
+
+  <section class="filters">
+    <div class="tabs">
+      <button class="active">All Artworks</button>
+      <button>Digital Prints</button>
+      <button>Merchandise</button>
+      <button>Custom Projects</button>
+    </div>
+    <div class="search-sort">
+      <input type="text" placeholder="🔍 Search products..." />
+      <select>
+        <option>Sort by: Newest</option>
+        <option>Sort by: Popular</option>
+        <option>Sort by: Price</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="products">
+    <h2>Featured Art Products</h2>
+    <div class="product-grid">
+      <% if (products.length === 0) { %>
+        <p>No products available at the moment.</p>
+      <% } else { %>
+        <% products.forEach(product => { %>
+          <div class="product-card">
+            <div class="product-img">
+              <img src="<%= product.imageUrl || '/placeholder.jpg' %>" alt="<%= product.title %>" />
+              <% if (product.tag === 'New') { %>
+                <span class="badge new">New Arrival</span>
+              <% } else if (product.tag === 'Best Seller') { %>
+                <span class="badge bestseller">Best Seller</span>
+              <% } %>
+            </div>
+            <div class="product-info">
+              <h3><%= product.title %></h3>
+              <p>By <%= product.brandId || 'Unknown Artist' %></p>
+              <span class="price">
+                $<%= product.price %>
+                <% if (product.originalPrice && product.originalPrice > product.price) { %>
+                  <del>$<%= product.originalPrice %></del>
+                <% } %>
+              </span>
+            </div>
+          </div>
+        <% }); %>
+      <% } %>
+    </div>
+  </section>
+
+  <div class="pagination">
+    <button disabled>← Previous</button>
+    <button class="active">1</button>
+    <button>2</button>
+    <button>3</button>
+    <button>4</button>
+    <button>Next →</button>
+  </div>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-logo">ArtHub</div>
+      <div class="newsletter">
+        <p>Stay in the know</p>
+        <input type="email" placeholder="📧 Your email address" />
+        <button>Subscribe</button>
+      </div>
+      <p>&copy; 2025 ArtHub.</p>
+    </div>
+  </footer>
+</body>
+</html>
