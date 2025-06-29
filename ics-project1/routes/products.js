@@ -70,14 +70,6 @@ router.post('/upload', upload.single('productImage'), async (req, res) => {
 
 
 });
-router.get('/marketplace', async (req, res) => {
-  try {
-    const products = await Product.find({});
-    res.render('marketplace', { products });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Failed to load marketplace');
-  }
-});
+
 
 module.exports = router;
