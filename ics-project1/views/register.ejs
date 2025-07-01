@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register | Artify</title>
+  <link rel="stylesheet" href="/register.css" />
+</head>
+<body>
+  <main>
+    <div class="register-card">
+      <h2>Create Your Account</h2>
+      <p>Register to join the Artify community.</p>
+
+      <form id="registerForm">
+        <label for="username">Username</label>
+        <input type="text" name="username" id="username" required />
+
+        <label for="email">Email</label>
+        <input type="email" name="email" id="email" required />
+
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required />
+
+        <label for="userRole">Select Role</label>
+        <select name="userRole" id="userRole" required>
+          <option value="">-- Select Role --</option>
+          <option value="Artist">Artist</option>
+          <option value="Buyer">Buyer</option>
+          <option value="Brand">Brand</option>
+        </select>
+
+        <button type="submit">Register</button>
+      </form>
+
+      <hr />
+      <p class="login-link">
+        Already have an account? <a href="/login">Login Now</a>
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Artify. All rights reserved.</p>
+  </footer>
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const data = {
+        username: e.target.username.value,
+        email: e.target.email.value,
+        password: e.target.password.value,
+        userRole: e.target.userRole.value,
+      };
+
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert("✅ Registered successfully!");
+          window.location.href = '/login';
+        } else {
+          alert("❌ Registration failed: " + (result.message || 'Unknown error'));
+        }
+      } catch (err) {
+        alert("❌ Network error or server not reachable.");
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>

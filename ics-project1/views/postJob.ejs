@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Post Your Services - ArtHub</title>
+  <link rel="stylesheet" href="/postJob.css" />
+</head>
+<body>
+ 
+
+  <main>
+    <div class="login-card">
+      <h2>Post What You Do</h2>
+      <p>Let people know what you can offer as a designer.</p>
+
+      <form action="/postJob" method="POST">
+        <label for="name">Your Name</label>
+        <input type="text" name="name" required />
+
+        <label for="specialty">Your Specialty (e.g., Branding, Illustration)</label>
+        <input type="text" name="specialty" required />
+
+        <label for="description">Description of Services</label>
+        <input type="text" name="description" required />
+
+        <label for="rate">Hourly Rate (Ksh)</label>
+        <input type="text" name="rate" required />
+
+        <button type="submit">Publish My Service</button>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 ArtHub</p>
+  </footer>
+</body>
+</html>

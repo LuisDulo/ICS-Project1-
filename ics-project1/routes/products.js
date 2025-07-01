@@ -39,15 +39,15 @@ const upload = multer({
 
 // Show the form
 router.get('/upload', (req, res) => {
-  const dummyBrandId = '60d5f9e2c4b9b81234abcdef'; // Dummy ID
+  const dummyBrandId = '60d5f9e2c4b9b81234abcdef'; 
   res.render('uploadProduct', { brandId: dummyBrandId });
 });
 
 // Handle form submit
 router.post('/upload', upload.single('productImage'), async (req, res) => {
   try {
-    console.log('File:', req.file); // DEBUG
-    console.log('Body:', req.body); // DEBUG
+    console.log('File:', req.file); 
+    console.log('Body:', req.body); 
 
     const { title, category, price, description, stockCount, brandId } = req.body;
 

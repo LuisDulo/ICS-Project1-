@@ -1,0 +1,31 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.artwork-header {
+  display: flex;
+  padding: 2rem;
+}
+.artwork-header img {
+  width: 300px;
+  height: auto;
+  margin-right: 2rem;
+}
+.artwork-header .info {
+  max-width: 600px;
+}
+.artwork-header .price {
+  color: #2a9d8f;
+  font-size: 1.5rem;
+}
+button.buy-btn, button.report-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+}
+.stars i {
+  color: gold;
+}
+.comments {
+  padding: 1rem 2rem;
+}

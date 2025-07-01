@@ -1,10 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const router = express.Router();
+
 const Product = require('./models/Product');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
+const session = require('express-session');
+const DesignerJob = require('./models/DesignerJob'); 
+
 
 const mongoose = require('mongoose');
 mongoose.set('strictQuery', true); 
@@ -15,12 +18,15 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 const productRoutes = require('./routes/products');
+const artworkRoutes = require('./routes/artwork');
+
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/', router);
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -39,6 +45,27 @@ app.use(
     },
   })
 );
+app.use(session({
+  secret: 'your_secret_key',
+  resave: false,
+  saveUninitialized: false
+}));
+// Makes the user available in all EJS templates as currentUser
+app.use((req, res, next) => {
+  res.locals.currentUser = req.session.user || null;
+  next();
+});
+function isLoggedIn(req, res, next) {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+}
+
+
+
+
+
 
 
 
@@ -62,7 +89,61 @@ mongoose.connect(process.env.MONGO_URI, {
   users = db.collection('users');
 
 //routes
+app.get('/register', (req, res) => {
+  res.render('register');
+});
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+app.get('/user/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const user = await users.findOne({ username });
+    console.log("👉 Checking for username:", username);
+console.log("🔍 Found user:", user);
+
+
+    if (!user) return res.status(404).send('User not found');
+
+    // Inject placeholder fields if not already in DB
+    const profileData = {
+      name: user.name || user.username,
+      username: user.username,
+      bio: user.bio || "Digital artist and creator",
+      avatar: user.profilePicture || "https://i.pravatar.cc/150?u=" + user.username,
+      followers: user.followers || 128,
+      following: user.following || 87,
+      projects: user.projects || 12,
+      posts: user.posts || 42,
+      showcasedArtworks: user.showcasedArtworks || [
+        { title: "Dreamscape", image: "/echoes.jpeg" },
+        { title: "Serenity", image: "/tree.jpeg" }
+      ],
+      collaborations: user.collaborations || [
+        "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2022.png",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Creative-Commons-Logo.svg/1024px-Creative-Commons-Logo.svg.png"
+      ],
+      purchased: user.purchased || [
+        { name: "Galaxy Pack", seller: "NovaArtist", price: 45, image: "/Neo.jpg" },
+        { name: "Mystic Pack", seller: "ArtbyRay", price: 30, image: "/tree.jpeg" }
+      ],
+      activity: user.activity || [
+        { type: 'like', user: 'Jay', artwork: 'Dreamscape', time: '2h ago' },
+        { type: 'comment', user: 'Luna', artwork: 'Serenity', comment: 'Love this piece!', time: '5h ago' },
+        { type: 'upload', user: user.username, artwork: 'Galaxy Journey', time: '1d ago' }
+      ]
+    };
+
+    res.render('userProfile', { user: profileData });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error loading user profile');
+  }
+});
+
   app.use('/', productRoutes);
+  app.use('/', artworkRoutes);
   app.get('/marketplace', async (req, res) => {
     try {
       const products = await Product.find({});
@@ -72,19 +153,18 @@ mongoose.connect(process.env.MONGO_URI, {
       res.status(500).send('Failed to load marketplace');
     }
   });
-  app.get('/designers', (req, res) => {
-  const artists = [
-    { id: 1, name: 'Emma Gonzalez', specialty: 'Logo Design', rating: 4.8, reviews: 120, rate: 75, image: 'https://i.pravatar.cc/80' },
-    // Add more...
-  ];
+  app.get('/designers', async (req, res) => {
+  try {
+    const artists = await DesignerJob.find({});
+    const featured = artists.slice(0, 2); // or use logic to pick actual featured designers
 
-  const featured = [
-    { id: 2, name: 'Liam Brown', specialty: 'Illustration', rating: 4.9, reviews: 90, rate: 80, image: 'https://i.pravatar.cc/81' },
-    // Add more...
-  ];
-
-  res.render('designers', { artists, featured });
+    res.render('designers', { artists, featured });
+  } catch (err) {
+    console.error("Error fetching designers:", err);
+    res.status(500).send("Error loading designers");
+  }
 });
+
 app.get('/home', async (req, res) => {
   try {
     const artworks = [
@@ -124,6 +204,51 @@ app.get('/home', async (req, res) => {
 app.get('/canvas', (req, res) => {
   res.render('canvas');
 });
+console.log("✅ /user/:username route registered");
+// GET: Artwork detail page
+app.get('/artwork/:id', async (req, res) => {
+  try {
+    const artworkId = req.params.id;
+    const artwork = await Product.findById(artworkId).lean();
+
+    if (!artwork) return res.status(404).send('Artwork not found');
+
+    res.render('artworkDetail', { artwork });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error loading artwork');
+  }
+});
+// GET post job page
+app.get('/postJob', (req, res) => {
+  res.render('postJob');
+});
+
+app.post('/postJob', async (req, res) => {
+  const { name, specialty, description, rate } = req.body;
+  console.log("Form data received:", req.body); // <-- DEBUG
+
+  const newDesigner = new DesignerJob({
+    name,
+    specialty,
+    description,
+    rate,
+    rating: (Math.random() * 2 + 3).toFixed(1),
+    reviews: Math.floor(Math.random() * 96 + 5),
+    image: `https://api.dicebear.com/8.x/lorelei/svg?seed=${encodeURIComponent(name)}`
+  });
+
+  try {
+    await newDesigner.save();
+    console.log("Saved to DB:", newDesigner); // <-- DEBUG
+    res.redirect('/designers');
+  } catch (err) {
+    console.error("Error saving to DB:", err);
+    res.status(500).send(`<h1>Error saving to DB</h1><pre>${err}</pre>`);
+
+  }
+});
+
 
 
 
@@ -167,7 +292,6 @@ app.post('/api/register', async (req, res) => {
 });
 
 
-// Login Route
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -178,19 +302,19 @@ app.post('/api/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) return res.status(400).json({ error: 'Incorrect password' });
 
-    res.json({
-      message: 'Login successful',
-      user: {
-        username: user.username,
-        email: user.email,
-        userRole: user.userRole,
-        status: user.status,
-        dateJoined: user.dateJoined,
-        profilePicture: user.profilePicture
-      }
-    });
+    // ✅ Store user data in the session
+    req.session.user = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.userRole,
+      profilePicture: user.profilePicture
+    };
+
+    res.json({ message: 'Login successful' });
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
-  
 });

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= user.name %> | ArtHub</title>
+  <link rel="stylesheet" href="userProfile.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <nav class="navbar">
+    <h2>ArtHub</h2>
+    <ul>
+      <li>Home</li>
+      <li>Canvas Editor</li>
+      <li>Marketplace</li>
+      <li>Hire a Designer</li>
+      <li class="active">User Profiles</li>
+    </ul>
+    <input type="text" placeholder="Search ArtHub...">
+    <i class="fas fa-user-circle user-icon"></i>
+  </nav>
+
+  <div class="profile-container">
+    <aside class="sidebar">
+      <img src="<%= user.avatar %>" alt="Avatar" class="avatar">
+      <h3><%= user.name %></h3>
+      <p><%= user.bio %></p>
+      <a href="#"><%= user.username %></a>
+      <div class="stats">
+        <p><strong><%= user.followers %></strong> Followers</p>
+        <p><strong><%= user.following %></strong> Following</p>
+      </div>
+      <p><strong><%= user.projects %></strong> Projects<br><strong><%= user.posts %></strong> Posts</p>
+      <button>Edit Profile</button>
+      <div class="socials">
+        <i class="fab fa-instagram"></i>
+        <i class="fab fa-twitter"></i>
+        <i class="fas fa-globe"></i>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="artworks">
+        <h2>Showcased Artworks</h2>
+        <div class="grid">
+          <% user.showcasedArtworks.forEach(art => { %>
+            <div class="art-card">
+              <img src="<%= art.image %>" alt="<%= art.title %>">
+              <div class="caption">
+                <h4><%= art.title %></h4>
+                <p><%= user.name %></p>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="collabs">
+        <h2>Brand Collaborations</h2>
+        <div class="brand-logos">
+          <% user.collaborations.forEach(logo => { %>
+            <img src="<%= logo %>" alt="Brand Logo">
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="purchased">
+        <h2>Purchased Collections</h2>
+        <div class="grid">
+          <% user.purchased.forEach(item => { %>
+            <div class="purchase-card">
+              <img src="<%= item.image %>" alt="<%= item.name %>">
+              <div>
+                <h4><%= item.name %></h4>
+                <p><%= item.seller %></p>
+                <span>$<%= item.price %></span>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="activity">
+        <h2>Recent Activity</h2>
+        <ul>
+          <% user.activity.forEach(act => { %>
+            <li>
+              <% if (act.type === 'like') { %>
+                ❤️ <%= act.user %> liked your artwork <strong><%= act.artwork %></strong>
+              <% } else if (act.type === 'comment') { %>
+                💬 <%= act.user %> commented on <strong><%= act.artwork %></strong>: “<%= act.comment %>”
+              <% } else if (act.type === 'upload') { %>
+                📤 <%= act.user %> uploaded a new artwork: <strong><%= act.artwork %></strong>
+              <% } %>
+              <span class="time"><%= act.time %></span>
+            </li>
+          <% }) %>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

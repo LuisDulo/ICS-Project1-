@@ -23,7 +23,7 @@
     <div class="hero-content">
       <h1>Find Your Perfect Creative Partner</h1>
       <p>Connect with top artists and designers for custom projects, branding, illustration, and more.</p>
-      <button class="btn">Post Your Job</button>
+      <a href="/postJob"><button class="btn">Post Your Job</button></a>
     </div>
     <div class="hero-image">
       <img src="/collaborate.jpg" alt="Team discussing project"/>
@@ -47,7 +47,7 @@
           <h4><%= artist.name %></h4>
           <p><%= artist.specialty %></p>
           <p>⭐ <%= artist.rating %> (<%= artist.reviews %>)</p>
-          <p>$<%= artist.rate %>/hr</p>
+          <p>Ksh<%= artist.rate %>/hr</p>
           <button class="btn small"><a href="/profile/<%= artist.id %>">View Profile</a></button>
         </div>
       <% }) %>
@@ -63,7 +63,7 @@
           <h4><%= artist.name %></h4>
           <p><%= artist.specialty %></p>
           <p>⭐ <%= artist.rating %> (<%= artist.reviews %>)</p>
-          <p>$<%= artist.rate %>/hr</p>
+          <p>Ksh<%= artist.rate %>/hr</p>
           <button class="btn small"><a href="/profile/<%= artist.id %>">View Profile</a></button>
         </div>
       <% }) %>
