@@ -1,46 +1,59 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const Artwork = require('../models/artwork');
+const Product = require('../models/Product');
 
-// Storage config (saves files to /public/uploads/)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'public/uploads'),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage });
-// Middleware to check if user is logged in
-
-// GET /upload-artwork
-router.get('/upload-artwork', (req, res) => {
-  if (!req.session.user) return res.redirect('/login'); // Optional auth check
-  res.render('uploadArtwork', { user: req.session.user });
-});
-// POST /upload-artwork
-router.post('/upload-artwork', upload.single('image'), async (req, res) => {
+// GET single artwork by slug
+router.get('/artwork/:slug', async (req, res) => {
   try {
-    const { title, category, price, description, stockCount } = req.body;
-    const imageUrl = '/uploads/' + req.file.filename;
+    const product = await Product.findOne({ slug: req.params.slug })
+      .populate('brandId') // artist info
+      .populate('comments')
+      .populate('reviews');
 
-    // Assuming req.user holds logged-in artist info
-    const artistId = req.user._id;
+    if (!product) {
+      return res.status(404).send('Artwork not found');
+    }
 
-    const newArtwork = new Artwork({
-      title,
-      category,
-      price,
-      description,
-      stockCount,
-      imageUrl,
-      artist: artistId
-    });
-
-    await newArtwork.save();
-    res.redirect('/marketplace');
+    res.render('artwork-detail', { product });
   } catch (err) {
-    console.error('❌ Upload failed:', err);
-    res.status(500).send('Upload failed');
+    console.error(err);
+    res.status(500).send('Error loading artwork');
   }
 });
+
+// POST review and/or comment
+// Place this at the bottom of routes/artwork.js
+router.post('/artwork/:slug/review', async (req, res) => {
+  const { rating, reviewText, commentText } = req.body;
+  const { slug } = req.params;
+  const user = req.session.user;
+
+  try {
+    const product = await Product.findOne({ slug });
+    if (!product) return res.status(404).send('Artwork not found');
+
+    if (rating && reviewText) {
+      product.reviews.push({
+        userName: user.username,
+        rating,
+        text: reviewText,
+      });
+    }
+
+    if (commentText) {
+      product.comments.push({
+        userName: user.username,
+        text: commentText,
+      });
+    }
+
+    await product.save();
+    res.redirect(`/artwork/${slug}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error submitting feedback');
+  }
+});
+
+
 module.exports = router;

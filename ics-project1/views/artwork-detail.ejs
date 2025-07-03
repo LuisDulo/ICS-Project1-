@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= product.title %> - ArtHub</title>
+  <link rel="stylesheet" href="/artwork.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9fb;
+      margin: 0;
+      padding: 0;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background-color: #fff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+    .navbar .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .navbar nav a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .artwork-container {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr;
+      gap: 2rem;
+      padding: 2rem 5%;
+      background: #fff;
+    }
+
+    .artwork-preview img {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .artwork-details h1 {
+      font-size: 2rem;
+      margin-bottom: 0.3rem;
+    }
+    .artwork-details p.price {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #6a1b9a;
+    }
+    .artwork-details .buy-btn {
+      background: #6a1b9a;
+      color: white;
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    .artwork-details .description {
+      margin-top: 1rem;
+      color: #555;
+    }
+
+    .ratings, .comments {
+      margin-top: 2rem;
+    }
+    .ratings h3, .comments h3 {
+      margin-bottom: 0.5rem;
+    }
+    .review, .comment {
+      background: #f1f1f9;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+    }
+    .review strong, .comment strong {
+      font-weight: 600;
+    }
+
+    form .report-btn {
+      background: none;
+      color: #c62828;
+      border: 1px solid #c62828;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 1.5rem;
+    }
+
+    .feedback-form {
+      margin-top: 3rem;
+      padding: 1.5rem;
+      background: #f8f6ff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+    }
+
+    .feedback-form h3 {
+      margin-bottom: 1rem;
+    }
+
+    .feedback-form textarea,
+    .feedback-form select,
+    .feedback-form input[type="text"] {
+      width: 100%;
+      padding: 0.6rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .feedback-form button {
+      background: #6a1b9a;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.9rem;
+      background-color: #f4f4f4;
+      margin-top: 4rem;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="artwork-container">
+    <div class="artwork-preview">
+      <img src="<%= product.imageUrl %>" alt="<%= product.title %>"/>
+    </div>
+    <div class="artwork-details">
+      <h1><%= product.title %></h1>
+      <p>by <a href="/user/<%= product.artist?.username %>"><%= product.artist?.username || 'Unknown Artist' %></a></p>
+
+      <p class="price">ksh<%= product.price %></p>
+     <form action="/pay" method="GET">
+  <input type="hidden" name="amount" value="<%= product.price %>">
+  <input type="hidden" name="accountReference" value="<%= product.title %>">
+  <button type="submit" class="buy-btn">🛒 Buy Now</button>
+</form>
+
+      <p class="description"><%= product.description %></p>
+
+      <div class="ratings">
+        <h3>Customer Reviews</h3>
+        <% if (product.reviews?.length > 0) { %>
+          <% product.reviews.forEach(review => { %>
+            <div class="review">
+              <strong><%= review.userName %></strong>
+              <span>⭐ <%= review.rating %>/5</span>
+              <p><%= review.text %></p>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <p>No reviews yet.</p>
+        <% } %>
+      </div>
+
+      <div class="comments">
+        <h3>Comments</h3>
+        <% if (product.comments?.length > 0) { %>
+          <% product.comments.forEach(comment => { %>
+            <div class="comment">
+              <strong><%= comment.userName %>:</strong>
+              <p><%= comment.text %></p>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <p>No comments yet.</p>
+        <% } %>
+      </div>
+
+      <div class="feedback-form">
+        <h3>Leave a Review or Comment</h3>
+        <form action="/artwork/<%= product.slug %>/review" method="POST">
+          <label>Rating (1–5):</label>
+          <select name="rating">
+            <option value="">-- Select Rating --</option>
+            <% for(let i=1; i<=5; i++) { %>
+              <option value="<%= i %>"><%= i %> ⭐</option>
+            <% } %>
+          </select>
+
+          <label>Review:</label>
+          <textarea name="reviewText" placeholder="Write a review..."></textarea>
+
+          <label>Comment:</label>
+          <textarea name="commentText" placeholder="Write a comment..."></textarea>
+
+          <button type="submit">Submit Feedback</button>
+        </form>
+      </div>
+
+      <form action="/report/<%= product._id %>" method="POST">
+        <button class="report-btn">⚠️ Report this artwork</button>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 ArtHub</p>
+  </footer>
+</body>
+</html>

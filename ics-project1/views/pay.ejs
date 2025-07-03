@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay with M-Pesa - ArtHub</title>
+  <link rel="stylesheet" href="/pay.css" />
+</head>
+<body>
+  <div class="payment-container">
+    <h1>Pay with M-Pesa</h1>
+    <p class="subtitle">Complete your purchase in one simple step.</p>
+
+   <form action="/pay" method="POST" class="payment-form">
+  <label for="phone">Phone Number (e.g., 254712345678):</label>
+  <input type="text" id="phone" name="phone" placeholder="Enter your M-Pesa phone number" required />
+
+  <label for="amount">Amount (KES):</label>
+  <input type="number" id="amount" name="amount" value="<%= amount %>" readonly />
+
+  <input type="hidden" name="accountReference" value="<%= accountReference %>" />
+
+  <button type="submit">📲 Pay with M-Pesa</button>
+</form>
+
+  </div>
+</body>
+</html>

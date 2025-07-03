@@ -14,7 +14,7 @@
       <a href="/canvas">Canvas Editor</a>
       <a class="active" href="/marketplace">Marketplace</a>
       <a href="/designers">Hire a Designer</a>
-      <a href="#">User Profiles</a>
+      <a href="/user-profile">My Profile</a>
     </nav>
     <div class="user-icon">👤</div>
   </header>
@@ -52,6 +52,7 @@
         <p>No products available at the moment.</p>
       <% } else { %>
         <% products.forEach(product => { %>
+          
           <div class="product-card">
             <div class="product-img">
               <img src="<%= product.imageUrl || '/placeholder.jpg' %>" alt="<%= product.title %>" />
@@ -62,15 +63,17 @@
               <% } %>
             </div>
             <div class="product-info">
-              <h3><%= product.title %></h3>
-              <p>By <%= product.brandId || 'Unknown Artist' %></p>
-              <span class="price">
-                $<%= product.price %>
-                <% if (product.originalPrice && product.originalPrice > product.price) { %>
-                  <del>$<%= product.originalPrice %></del>
-                <% } %>
-              </span>
-            </div>
+  <h3><%= product.title %></h3>
+  <p>By <%= product.artist?.username || 'Unknown Artist' %></p>
+  <span class="price">
+    ksh<%= product.price %>
+    <% if (product.originalPrice && product.originalPrice > product.price) { %>
+      <del>ksh<%= product.originalPrice %></del>
+    <% } %>
+  </span>
+  <a href="/artwork/<%= product.slug %>" class="view-btn">👁 View</a>
+</div>
+
           </div>
         <% }); %>
       <% } %>

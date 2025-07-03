@@ -14,7 +14,7 @@
       <a href="/canvas">Canvas Editor</a>
       <a href="/marketplace">Marketplace</a>
       <a href="#" class="active">Hire a Designer</a>
-      <a href="/profile">User Profiles</a>
+      <a href="/user-profile">My Profile</a>
     </nav>
     <div class="user-icon">👤</div>
   </header>
@@ -48,7 +48,7 @@
           <p><%= artist.specialty %></p>
           <p>⭐ <%= artist.rating %> (<%= artist.reviews %>)</p>
           <p>Ksh<%= artist.rate %>/hr</p>
-          <button class="btn small"><a href="/profile/<%= artist.id %>">View Profile</a></button>
+          <button class="btn small"><a href="/profile/<%= artist.username %>">View Profile</a></button>
         </div>
       <% }) %>
     </div>

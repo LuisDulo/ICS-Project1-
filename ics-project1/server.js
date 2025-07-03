@@ -1,12 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
+const slugify = require('slugify'); // make sure to install: npm i slugify
 const Product = require('./models/Product');
 const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
 const session = require('express-session');
 const DesignerJob = require('./models/DesignerJob'); 
+const mpesaRoutes = require('./routes/mpesa');
+const isProduction = process.env.NODE_ENV === 'production';
+const MongoStore = require('connect-mongo');
 
 
 const mongoose = require('mongoose');
@@ -22,7 +25,12 @@ const artworkRoutes = require('./routes/artwork');
 
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://your-ngrok-url.ngrok-free.app'], // replace with your actual ngrok link
+  credentials: true
+}));
+
+
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -34,9 +42,9 @@ app.use(express.static('public'));
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      defaultSrc: ["'self'", "https:"],
+      defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"], // ✅ Add this line
       imgSrc: ["'self'", "https:", "data:"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https:"],
       connectSrc: ["'self'", "https:"],
@@ -45,11 +53,23 @@ app.use(
     },
   })
 );
+
 app.use(session({
-  secret: 'your_secret_key',
+  secret: 'your_secret_key', // 🔐 Keep this in .env in production
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI, // same as used in mongoose.connect()
+    collectionName: 'sessions',       // optional: defaults to "sessions"
+    ttl: 60 * 60                      // 1 hour in seconds (Time To Live)
+  }),
+  cookie: {
+    maxAge: 60 * 60 * 1000,           // 1 hour in milliseconds
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction
+  }
 }));
+
 // Makes the user available in all EJS templates as currentUser
 app.use((req, res, next) => {
   res.locals.currentUser = req.session.user || null;
@@ -89,6 +109,14 @@ mongoose.connect(process.env.MONGO_URI, {
   users = db.collection('users');
 
 //routes
+app.get('/session-check', (req, res) => {
+  if (req.session.user) {
+    res.send(`✅ Logged in as: ${req.session.user.username}`);
+  } else {
+    res.send('❌ No session found');
+  }
+});
+
 app.get('/register', (req, res) => {
   res.render('register');
 });
@@ -144,6 +172,7 @@ console.log("🔍 Found user:", user);
 
   app.use('/', productRoutes);
   app.use('/', artworkRoutes);
+  app.use('/', mpesaRoutes);
   app.get('/marketplace', async (req, res) => {
     try {
       const products = await Product.find({});
@@ -164,6 +193,135 @@ console.log("🔍 Found user:", user);
     res.status(500).send("Error loading designers");
   }
 });
+app.get('/user-profile', async (req, res) => {
+  try {
+    if (!req.session.user) return res.redirect('/login');
+
+    const sessionUsername = req.session.user.username;
+
+    const user = await users.findOne({ username: sessionUsername });
+
+    if (!user) return res.status(404).send('User not found');
+
+    const artworks = await Product.find({ artist: user._id });
+
+    const profileData = {
+      name: user.name || sessionUsername,
+      username: sessionUsername,
+      email: user.email,
+      bio: user.bio || "This artist hasn't added a bio yet.",
+      avatar: user.profilePicture || `https://i.pravatar.cc/150?u=${sessionUsername}`,
+      dateJoined: user.dateJoined?.toDateString() || "N/A",
+      followers: user.followers?.length || 0,
+      following: user.following?.length || 0,
+      artworks
+    };
+
+    res.render('userProfile', { user: profileData });
+
+  } catch (err) {
+    console.error('❌ Error loading user profile:', err);
+    res.status(500).send('Server Error');
+  }
+});
+
+app.get('/profile/:username', async (req, res) => {
+  try {
+    const username = req.params.username;
+    const viewer = req.session.user; // currently logged-in user
+
+    const user = await users.findOne({ username });
+
+    if (!user) return res.status(404).send('User not found');
+
+    const artworks = await Product.find({ artist: user._id });
+
+    let isFollowing = false;
+    if (viewer) {
+      const currentUser = await users.findOne({ username: viewer.username });
+
+      // Check if the profile owner's ID is in the current user's following list
+      isFollowing = (currentUser.following || []).some(f =>
+        f.toString() === user._id.toString()
+      );
+    }
+
+    const profileData = {
+      name: user.name || username,
+      username,
+      email: user.email,
+      bio: user.bio || "This artist hasn't added a bio yet.",
+      avatar: user.profilePicture || `https://i.pravatar.cc/150?u=${username}`,
+      dateJoined: user.dateJoined?.toDateString() || "N/A",
+      artworks,
+      followers: user.followers || [],
+      following: user.following || []
+    };
+
+    res.render('publicProfile', {
+      user: profileData,
+      currentUser: viewer,
+      isFollowing // ✅ Pass to template
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error loading profile");
+  }
+});
+app.post('/follow/:username', async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+
+    const targetUsername = req.params.username;
+    const currentUsername = req.session.user.username;
+
+    if (targetUsername === currentUsername) {
+      return res.status(400).send("You can't follow yourself");
+    }
+
+    const targetUser = await users.findOne({ username: targetUsername });
+    const currentUser = await users.findOne({ username: currentUsername });
+
+    if (!targetUser || !currentUser) {
+      return res.status(404).send("User not found");
+    }
+
+    const isFollowing = currentUser.following?.some(
+      id => id.toString() === targetUser._id.toString()
+    );
+
+    if (isFollowing) {
+      // Unfollow
+      await users.updateOne(
+        { _id: currentUser._id },
+        { $pull: { following: targetUser._id } }
+      );
+      await users.updateOne(
+        { _id: targetUser._id },
+        { $pull: { followers: currentUser._id } }
+      );
+    } else {
+      // Follow
+      await users.updateOne(
+        { _id: currentUser._id },
+        { $addToSet: { following: targetUser._id } }
+      );
+      await users.updateOne(
+        { _id: targetUser._id },
+        { $addToSet: { followers: currentUser._id } }
+      );
+    }
+
+    res.redirect(`/profile/${targetUsername}`);
+  } catch (err) {
+    console.error("❌ Error in follow route:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+
 
 app.get('/home', async (req, res) => {
   try {
@@ -205,28 +363,36 @@ app.get('/canvas', (req, res) => {
   res.render('canvas');
 });
 console.log("✅ /user/:username route registered");
-// GET: Artwork detail page
-app.get('/artwork/:id', async (req, res) => {
-  try {
-    const artworkId = req.params.id;
-    const artwork = await Product.findById(artworkId).lean();
 
-    if (!artwork) return res.status(404).send('Artwork not found');
 
-    res.render('artworkDetail', { artwork });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error loading artwork');
+app.get('/artwork/:slug', async (req, res) => {
+  const product = await Product.findOne({ slug: req.params.slug })
+    .populate('brandId')
+    .populate('comments')
+    .populate('reviews')
+    .populate('artist');
+
+  if (!product) {
+    return res.status(404).send('Artwork not found');
   }
+
+  res.render('artwork-detail', { product });
 });
+
+
 // GET post job page
 app.get('/postJob', (req, res) => {
   res.render('postJob');
 });
 
 app.post('/postJob', async (req, res) => {
+  // ✅ Require login
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+
   const { name, specialty, description, rate } = req.body;
-  console.log("Form data received:", req.body); // <-- DEBUG
+  console.log("Form data received:", req.body);
 
   const newDesigner = new DesignerJob({
     name,
@@ -235,19 +401,21 @@ app.post('/postJob', async (req, res) => {
     rate,
     rating: (Math.random() * 2 + 3).toFixed(1),
     reviews: Math.floor(Math.random() * 96 + 5),
-    image: `https://api.dicebear.com/8.x/lorelei/svg?seed=${encodeURIComponent(name)}`
+    image: `https://api.dicebear.com/8.x/lorelei/svg?seed=${encodeURIComponent(name)}`,
+    username: req.session.user.username, // ✅ Save username
+    userId: req.session.user._id         // ✅ Save reference to User
   });
 
   try {
     await newDesigner.save();
-    console.log("Saved to DB:", newDesigner); // <-- DEBUG
+    console.log("✅ Saved to DB:", newDesigner);
     res.redirect('/designers');
   } catch (err) {
-    console.error("Error saving to DB:", err);
+    console.error("❌ Error saving to DB:", err);
     res.status(500).send(`<h1>Error saving to DB</h1><pre>${err}</pre>`);
-
   }
 });
+
 
 
 
@@ -280,7 +448,10 @@ app.post('/api/register', async (req, res) => {
       userRole: "Buyer",
       status: "active",
       dateJoined: new Date(),
-      profilePicture: ""
+      profilePicture: "",
+      followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+
     };
 
     await users.insertOne(newUser);
@@ -302,19 +473,41 @@ app.post('/api/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) return res.status(400).json({ error: 'Incorrect password' });
 
-    // ✅ Store user data in the session
-    req.session.user = {
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.userRole,
-      profilePicture: user.profilePicture
-    };
+   req.session.user = {
+  _id: user._id,
+  username: user.username,
+  email: user.email,
+  role: user.userRole,
+  profilePicture: user.profilePicture
+};
 
-    res.json({ message: 'Login successful' });
+req.session.save(err => {
+  if (err) {
+    console.error("❌ Error saving session:", err);
+    return res.status(500).json({ error: 'Session save failed' });
+  }
+
+  res.json({ message: 'Login successful' });
+});
+
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+app.get('/set-session', (req, res) => {
+  req.session.user = { username: 'TestUser' };
+  res.send('✅ Session created');
+});
+
+app.get('/get-session', (req, res) => {
+  if (req.session.user) {
+    res.send(`✅ Session user: ${req.session.user.username}`);
+  } else {
+    res.send('❌ No session found');
+  }
+});
+
+
+

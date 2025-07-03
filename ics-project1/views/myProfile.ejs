@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title><%= user.name %>'s Profile</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 2rem; }
+    .profile-container { background: white; border-radius: 12px; padding: 2rem; max-width: 900px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .user-header { display: flex; align-items: center; gap: 1.5rem; }
+    .user-header img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
+    .user-header h2 { margin: 0; font-size: 1.8rem; }
+    .user-info p { margin: 0.2rem 0; color: #555; }
+    .artwork-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .artwork-card { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
+    .artwork-card img { width: 100%; height: 160px; object-fit: cover; }
+    .artwork-card .details { padding: 1rem; }
+    .artwork-card h3 { margin: 0; font-size: 1rem; }
+    .artwork-card p { font-size: 0.9rem; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="profile-container">
+    <div class="user-header">
+      <img src="<%= user.avatar %>" alt="Profile picture">
+      <div class="user-info">
+        <h2><%= user.name %></h2>
+        <p>@<%= user.username %></p>
+        <p>Email: <%= user.email %></p>
+        <p>Bio: <%= user.bio %></p>
+        <p>Joined: <%= user.dateJoined %></p>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 2rem;">Uploaded Artworks</h3>
+    <% if (user.artworks.length === 0) { %>
+      <p style="color: #777;">No artworks uploaded yet.</p>
+    <% } else { %>
+      <div class="artwork-grid">
+        <% user.artworks.forEach(art => { %>
+          <div class="artwork-card">
+            <img src="<%= art.imageUrl || '/placeholder.jpg' %>" alt="<%= art.title %>">
+            <div class="details">
+              <h3><%= art.title %></h3>
+              <p>$<%= art.price %></p>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

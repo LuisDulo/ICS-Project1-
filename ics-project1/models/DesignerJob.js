@@ -7,7 +7,12 @@ const DesignerJobSchema = new mongoose.Schema({
   rate: Number,
   rating: Number,
   reviews: Number,
-  image: String
+  image: String,
+  username: String, // ✅ store who posted this
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User' // if you have a User model
+  }
 });
 
 module.exports = mongoose.model('DesignerJob', DesignerJobSchema);

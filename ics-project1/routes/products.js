@@ -4,6 +4,16 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Product = require('../models/Product');
+const slugify = require('slugify');
+
+function isLoggedIn(req, res, next) {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+}
+
+
 
 // Ensure upload folder exists
 const uploadPath = path.join(__dirname, '..', 'public', 'uploads');
@@ -38,37 +48,42 @@ const upload = multer({
 });
 
 // Show the form
-router.get('/upload', (req, res) => {
-  const dummyBrandId = '60d5f9e2c4b9b81234abcdef'; 
-  res.render('uploadProduct', { brandId: dummyBrandId });
+router.get('/upload', isLoggedIn, (req, res) => {
+  const currentUser = req.session.user;
+  res.render('uploadProduct', { brandId: currentUser._id }); // pass brandId from session
 });
 
-// Handle form submit
-router.post('/upload', upload.single('productImage'), async (req, res) => {
-  try {
-    console.log('File:', req.file); 
-    console.log('Body:', req.body); 
 
-    const { title, category, price, description, stockCount, brandId } = req.body;
+// Handle form submit
+// Handle form submit
+router.post('/upload', isLoggedIn, upload.single('productImage'), async (req, res) => {
+  try {
+    const { title, category, price, description, stockCount } = req.body;
+    const currentUser = req.session.user;
+    console.log("👤 Current user session:", currentUser);
+
+
+    const slug = slugify(title, { lower: true, strict: true });
 
     const newProduct = new Product({
-      title,
-      category,
-      price,
-      description,
-      stockCount,
-      brandId,
-      imageUrl: '/uploads/' + req.file.filename
-    });
+  title,
+  slug,
+  category,
+  price,
+  description,
+  stockCount,
+  brandId: currentUser._id,   // OK
+  artist: currentUser._id,    // ✅ FIXED: now using ObjectId as required
+  imageUrl: '/uploads/' + req.file.filename
+});
+
 
     await newProduct.save();
     res.send('✅ Product uploaded successfully!');
   } catch (err) {
-  console.error('❌ Upload Error:', err);
-  res.status(500).send(`Error uploading product: ${err.message}`);
-}
-
-
+    console.error('❌ Upload Error:', err);
+    res.status(500).send(`Error uploading product: ${err.message}`);
+  }
 });
 
 
