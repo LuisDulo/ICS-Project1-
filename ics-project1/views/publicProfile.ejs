@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,7 +128,11 @@
   <% } %>
 </form>
 
-      <a href="/messages/<%= user.username %>">💬 Message</a>
+      <a href="/chat/<%= user.username %>">💬 Message</a>
+
+
+
+
     <% } %>
   </section>
 
@@ -157,6 +162,23 @@
         <% }) %>
       </div>
     <% } %>
+    <script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io(); // This connects to your Socket.IO server
+
+  document.querySelectorAll('.message-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const recipient = this.dataset.username;
+
+      // You could either:
+      // 👉 1. Open a modal
+      // 👉 2. Navigate to a chat page with socket messaging
+      // 👉 For now, let’s go to `/chat/:username` like before:
+      window.location.href = `/chat/${recipient}`;
+    });
+  });
+</script>
+
   </section>
 
   <footer>

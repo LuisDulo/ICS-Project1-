@@ -10,6 +10,10 @@ const DesignerJob = require('./models/DesignerJob');
 const mpesaRoutes = require('./routes/mpesa');
 const isProduction = process.env.NODE_ENV === 'production';
 const MongoStore = require('connect-mongo');
+const http = require('http');
+const socketIo = require('socket.io');
+const Message = require('./models/message'); // add this at top
+
 
 
 const mongoose = require('mongoose');
@@ -19,6 +23,9 @@ require('dotenv').config();
 const path = require('path');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
 const PORT = 3000;
 const productRoutes = require('./routes/products');
 const artworkRoutes = require('./routes/artwork');
@@ -54,23 +61,27 @@ app.use(
   })
 );
 
-app.use(session({
-  secret: 'your_secret_key', // 🔐 Keep this in .env in production
+
+
+const sessionMiddleware = session({
+  secret: 'your_secret_key',
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI, // same as used in mongoose.connect()
-    collectionName: 'sessions',       // optional: defaults to "sessions"
-    ttl: 60 * 60                      // 1 hour in seconds (Time To Live)
+    mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions',
+    ttl: 60 * 60
   }),
   cookie: {
-    maxAge: 60 * 60 * 1000,           // 1 hour in milliseconds
+    maxAge: 60 * 60 * 1000,
     sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction
   }
-}));
+});
 
 // Makes the user available in all EJS templates as currentUser
+app.use(sessionMiddleware);
+
 app.use((req, res, next) => {
   res.locals.currentUser = req.session.user || null;
   next();
@@ -83,6 +94,8 @@ function isLoggedIn(req, res, next) {
 }
 
 
+const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+io.use(wrap(sessionMiddleware));
 
 
 
@@ -107,6 +120,9 @@ mongoose.connect(process.env.MONGO_URI, {
   await client.connect();
   const db = client.db('artify');
   users = db.collection('users');
+const messageRoutes = require('./routes/messages')(users);
+const userSocketMap = {}; // username => socket.id
+const messagesCollection = db.collection('messages');
 
 //routes
 app.get('/session-check', (req, res) => {
@@ -173,6 +189,7 @@ console.log("🔍 Found user:", user);
   app.use('/', productRoutes);
   app.use('/', artworkRoutes);
   app.use('/', mpesaRoutes);
+  app.use('/messages', messageRoutes);
   app.get('/marketplace', async (req, res) => {
     try {
       const products = await Product.find({});
@@ -322,6 +339,27 @@ app.post('/follow/:username', async (req, res) => {
 });
 
 
+app.get('/chat/:username', isLoggedIn, async (req, res) => {
+  const recipientUsername = req.params.username;
+  const sender = await users.findOne({ username: req.session.user.username });
+  const recipient = await users.findOne({ username: recipientUsername });
+
+  if (!recipient) return res.status(404).send("User not found");
+
+  const Message = require('./models/message');
+  const messages = await Message.find({
+    $or: [
+      { sender: sender._id, recipient: recipient._id },
+      { sender: recipient._id, recipient: sender._id }
+    ]
+  }).sort({ timestamp: 1 });
+
+  res.render('chat', {
+    recipient: recipientUsername,
+    messages
+  });
+});
+
 
 app.get('/home', async (req, res) => {
   try {
@@ -348,9 +386,9 @@ app.get('/home', async (req, res) => {
     }));
 
     const categories = [
-      { name: 'Digital Art', image: 'https://source.unsplash.com/400x300/?digital,art' },
-      { name: 'Illustration', image: 'https://source.unsplash.com/400x300/?illustration' },
-      { name: 'Photography', image: 'https://source.unsplash.com/400x300/?photography,camera' }
+      { name: 'Digital Art', image: '/digital.jpeg' },
+      { name: 'Illustration', image: '/illustration.jpeg' },
+      { name: 'Photography', image: '/photography.jpeg' }
     ];
 
     res.render('home', { artworks, popularArtists: finalArtists, categories });
@@ -418,13 +456,72 @@ app.post('/postJob', async (req, res) => {
 
 
 
+const Message = require('./models/message'); // Import your message model
+
+io.use((socket, next) => {
+  const session = socket.request.session;
+  if (session && session.user) {
+    socket.username = session.user.username;
+    return next();
+  }
+  return next(new Error("Not authenticated"));
+});
+
+io.on('connection', (socket) => {
+  console.log('✅ New connection:', socket.username);
+
+  // Map the user to their socket ID
+  userSocketMap[socket.username] = socket.id;
+
+  // Handle private message
+  socket.on('private-message', async ({ to, message }) => {
+    try {
+      const sender = await users.findOne({ username: socket.username });
+      const recipient = await users.findOne({ username: to });
+
+      if (!sender || !recipient) return;
+
+      // Save message to MongoDB
+      const newMessage = new Message({
+        sender: sender._id,
+        recipient: recipient._id,
+        content: message,
+      });
+      await newMessage.save();
+
+      // Deliver message in real-time
+      const targetSocketId = userSocketMap[to];
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('private-message', {
+          from: socket.username,
+          message
+        });
+      }
+    } catch (err) {
+      console.error("❌ Error saving or sending message:", err);
+    }
+  });
+socket.on('typing', ({ to }) => {
+  const targetSocketId = userSocketMap[to];
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('typing', { from: socket.username });
+  }
+});
+
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    console.log(`❌ Disconnected: ${socket.username}`);
+    delete userSocketMap[socket.username];
+  });
+});
+
 
 
 
 
 
   // Start server after DB is ready
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
   });
 }).catch(err => {

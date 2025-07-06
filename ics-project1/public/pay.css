@@ -20,7 +20,7 @@ body {
 }
 
 .payment-container h1 {
-  color: #6a1b9a;
+  color: #4f46e5;
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
 }
@@ -50,7 +50,7 @@ body {
 
 .payment-form button {
   width: 100%;
-  background: #6a1b9a;
+  background: #4f46e5;
   color: white;
   padding: 0.8rem;
   border: none;
@@ -62,5 +62,5 @@ body {
 }
 
 .payment-form button:hover {
-  background: #4a1173;
+  background:#4f46e5 ;
 }

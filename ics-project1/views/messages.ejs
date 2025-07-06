@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat with <%= otherUser.name %> | ArtHub</title>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; background: #fafafa; }
+    .chat-box {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .message { margin-bottom: 1rem; }
+    .message.you { text-align: right; }
+    .message .bubble {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      background: #eee;
+      max-width: 60%;
+    }
+    .message.you .bubble { background: #c5cae9; }
+  </style>
+</head>
+<body>
+  <div class="chat-box">
+    <h2>Conversation with <%= otherUser.name %></h2>
+
+    <div id="chat-messages">
+      <% messages.forEach(msg => { %>
+        <div class="message <%= msg.sender === currentUser.username ? 'you' : '' %>">
+          <div class="bubble"><%= msg.content %></div>
+        </div>
+      <% }) %>
+    </div>
+
+    <form id="chat-form" action="/messages/<%= otherUser.username %>" method="POST">
+      <textarea name="content" placeholder="Type your message..." required style="width: 100%; padding: 0.5rem;"></textarea>
+      <button type="submit" style="margin-top: 0.5rem;">Send</button>
+    </form>
+  </div>
+
+  <script>
+  const currentUser = "<%= currentUser.username %>";
+  const otherUser = "<%= otherUser.username %>";
+  const messagesDiv = document.querySelector('.chat-box');
+
+  async function loadMessages() {
+    try {
+      const res = await fetch(`/messages/${otherUser}/json`);
+      const data = await res.json();
+
+      const html = data.map(msg => `
+        <div class="message ${msg.from === currentUser ? 'you' : ''}">
+          <div class="bubble">${msg.content}</div>
+        </div>
+      `).join('');
+
+      messagesDiv.querySelectorAll('.message').forEach(e => e.remove());
+      messagesDiv.insertAdjacentHTML('afterbegin', html);
+    } catch (err) {
+      console.error("❌ Auto-reload failed:", err);
+    }
+  }
+
+  // Reload every 2 seconds
+  setInterval(loadMessages, 2000);
+</script>
+
+</body>
+</html>

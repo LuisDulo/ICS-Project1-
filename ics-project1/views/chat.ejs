@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat</title>
+  <style>
+    body { font-family: sans-serif; }
+    .chat-box { max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 20px; }
+    .msg { margin: 10px 0; }
+    .msg.sent { text-align: right; }
+    .bubble { background: #dcf8c6; padding: 0.5rem 1rem; border-radius: 10px; display: inline-block; }
+    .timestamp { font-size: 0.7em; color: #888; margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <div class="chat-box">
+    <h2>Chat with <%= recipient %></h2>
+    
+    <div id="messages">
+      <% messages.forEach(msg => { %>
+        <div class="msg <%= msg.sender.toString() === currentUser._id.toString() ? 'sent' : 'received' %>">
+          <div class="bubble"><%= msg.content %></div>
+          <div class="timestamp"><%= msg.timestamp.toLocaleString() %></div>
+        </div>
+      <% }) %>
+    </div>
+
+    <input id="msgInput" placeholder="Type a message" autocomplete="off">
+   <button id="sendBtn">Send</button>
+
+  </div>
+<div id="typingIndicator" style="color: gray; font-size: 0.9em; height: 1em;"></div>
+
+ <script src="/socket.io/socket.io.js"></script>
+
+<script>
+  const socket = io();
+  const recipient = "<%= recipient %>";
+document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
+  const messagesDiv = document.getElementById('messages');
+  const msgInput = document.getElementById('msgInput');
+  const typingIndicator = document.getElementById('typingIndicator');
+
+  function sendMessage() {
+    const message = msgInput.value;
+    if (!message.trim()) return;
+
+    // Emit the message to the server
+    socket.emit('private-message', { to: recipient, message });
+
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+
+    // Append the message to the sender's view
+    const el = document.createElement('div');
+    el.className = 'msg sent';
+    el.innerHTML = `<div class="bubble">${message}</div><span class="timestamp">✔</span>`;
+    messagesDiv.appendChild(el);
+    msgInput.value = '';
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  // Typing: Emit on input
+  msgInput.addEventListener('input', () => {
+    socket.emit('typing', { to: recipient });
+  });
+
+  // Listen for incoming message
+  socket.on('private-message', ({ from, message }) => {
+    const el = document.createElement('div');
+    el.className = 'msg received';
+    el.innerHTML = `<div class="bubble"><b>${from}:</b> ${message}</div>`;
+    messagesDiv.appendChild(el);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  });
+
+  // Listen for typing indicator
+  socket.on('typing', ({ from }) => {
+    typingIndicator.innerText = `${from} is typing...`;
+
+    clearTimeout(window.typingTimeout);
+    window.typingTimeout = setTimeout(() => {
+      typingIndicator.innerText = '';
+    }, 2000);
+  });
+</script>
+
+</body>
+</html>
