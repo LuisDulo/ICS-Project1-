@@ -29,3 +29,19 @@ button.buy-btn, button.report-btn {
 .comments {
   padding: 1rem 2rem;
 }
+a.report-btn {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  background: none;
+  color: #c62828;
+  border: 1px solid #c62828;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  font-weight: bold;
+}
+a.report-btn:hover {
+  background-color: #ffcdd2;
+}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard | ArtHub</title>
+  <link rel="stylesheet" href="/admin.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9fb;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: linear-gradient(to right, #a64ce0, #ff5b75);
+      color: white;
+      padding: 1.5rem 2rem;
+      text-align: center;
+    }
+
+    .dashboard-container {
+      padding: 2rem 5%;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .card p {
+      font-size: 2rem;
+      margin-top: 0.5rem;
+      color: #4f46e5;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      margin-top: 2rem;
+    }
+
+    table {
+      width: 100%;
+      background: #fff;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    table th, table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    table th {
+      background: #f3f3f7;
+      color: #333;
+    }
+
+    .delete-btn {
+      background: #ff5252;
+      color: white;
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Admin Dashboard</h1>
+    <p>Monitor reports, manage users & artworks, and track activity</p>
+  </header>
+
+  <main class="dashboard-container">
+
+    <div class="stats-grid">
+      <div class="card">
+        <h3>Total Users</h3>
+        <p><%= stats.totalUsers %></p>
+      </div>
+      <div class="card">
+        <h3>Total Artworks</h3>
+        <p><%= stats.totalArtworks %></p>
+      </div>
+      <div class="card">
+        <h3>Reports</h3>
+        <p><%= stats.totalReports %></p>
+      </div>
+      <div class="card">
+        <h3>Revenue</h3>
+        <p>Ksh <%= stats.totalRevenue %></p>
+      </div>
+    </div>
+
+    <h2 class="section-title">Reported Content</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Reason</th>
+          <th>Reported By</th>
+          <th>Time</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% reports.forEach(r => { %>
+          <tr>
+            <td><%= r.type %></td>
+            <td><%= r.reason %></td>
+            <td><%= r.reportedBy %></td>
+            <td><%= r.timestamp.toLocaleString() %></td>
+            <td>
+              <form action="/admin/delete/<%= r.reportedId %>?type=<%= r.type %>" method="POST" onsubmit="return confirm('Are you sure?')">
+                <button class="delete-btn">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <h2 class="section-title">Pending M-Pesa Payments</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Reference</th>
+      <th>Product ID</th>
+      <th>Username</th>
+      <th>Requested At</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% pendingPayments.forEach(p => { %>
+      <tr>
+        <td><%= p.reference %></td>
+        <td><%= p.productId %></td>
+        <td><%= p.username %></td>
+        <td><%= new Date(p.timestamp).toLocaleString() %></td>
+        <td>
+          <form method="POST" action="/admin/payments/<%= p._id %>/approve" onsubmit="return confirm('Approve this payment manually?')">
+            <button class="delete-btn" style="background-color: #4caf50;">Approve</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+  </main>
+
+</body>
+</html>

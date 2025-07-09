@@ -1,0 +1,28 @@
+<h2>Processing your payment...</h2>
+<p>Please complete payment on your phone</p>
+
+<script>
+  const reference = "<%= accountReference %>";
+
+  async function checkStatus() {
+    const res = await fetch(`/payment-status/${reference}`);
+    const data = await res.json();
+
+    if (data.status === 'confirmed') {
+      // ✅ Redirect to success page immediately if confirmed
+      window.location.href = `/payment-success?ref=${reference}`;
+    } else {
+      // 🔄 Keep polling every 3 seconds
+      setTimeout(checkStatus, 3000);
+    }
+  }
+
+  // Start polling
+  checkStatus();
+
+  // Force redirect after 3 seconds regardless
+  setTimeout(() => {
+  window.location.href = `/awaiting-approval/${reference}`;
+}, 9000); // Redirects after 9 seconds
+
+</script>

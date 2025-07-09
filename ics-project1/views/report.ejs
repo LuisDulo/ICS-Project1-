@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Report Content</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #d32f2f;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    select, textarea, input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      background-color: #d32f2f;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    button:hover {
+      background-color: #b71c1c;
+    }
+
+    .back-link {
+      display: block;
+      margin-top: 2rem;
+      text-align: center;
+      color: #333;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚨 Report Content</h1>
+
+    <form action="/report" method="POST">
+      <!-- Hidden ID of the reported item -->
+      <input type="hidden" name="reportedId" value="<%= reportedItemId %>">
+
+      <label for="type">What are you reporting?</label>
+      <select name="type" id="type" required>
+        <option value="">Select type...</option>
+        <option value="Artwork">Artwork</option>
+        <option value="User">User</option>
+        <option value="Message">Message</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label for="reason">Reason</label>
+      <textarea name="reason" id="reason" rows="5" placeholder="Please describe the issue..." required></textarea>
+
+      <button type="submit">Submit Report</button>
+    </form>
+
+    <a href="/home" class="back-link">← Back to Home</a>
+  </div>
+</body>
+</html>

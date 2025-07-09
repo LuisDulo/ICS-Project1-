@@ -13,7 +13,10 @@ const MongoStore = require('connect-mongo');
 const http = require('http');
 const socketIo = require('socket.io');
 const Message = require('./models/message'); // add this at top
-
+const logActivity = require('./utils/logActivity');
+const multer = require('multer');
+const upload = multer({ dest: 'public/uploads/' });
+const { MongoClient, ObjectId } = require('mongodb');
 
 
 const mongoose = require('mongoose');
@@ -60,6 +63,10 @@ app.use(
     },
   })
 );
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
 
 
 
@@ -92,6 +99,11 @@ function isLoggedIn(req, res, next) {
   }
   next();
 }
+function isAdmin(req, res, next) {
+  if (req.session.user?.role !== 'Admin') return res.status(403).send("Forbidden");
+  next();
+}
+
 
 
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
@@ -203,6 +215,7 @@ console.log("🔍 Found user:", user);
   try {
     const artists = await DesignerJob.find({});
     const featured = artists.slice(0, 2); // or use logic to pick actual featured designers
+     const products = await Product.find({ stockCount: { $gt: 0 } });
 
     res.render('designers', { artists, featured });
   } catch (err) {
@@ -514,11 +527,130 @@ socket.on('typing', ({ to }) => {
     delete userSocketMap[socket.username];
   });
 });
+app.get('/report/:id', isLoggedIn, (req, res) => {
+  const reportedItemId = req.params.id;
+  res.render('report', { reportedItemId });
+});
+
+// Admin Dashboard Main Page
+app.get('/admin/dashboard', isAdmin, async (req, res) => {
+  try {
+    const allUsers = await users.find().toArray();
+    const allProducts = await Product.find({});
+    const reports = await db.collection('reports').find().toArray(); // Example reports collection
+
+    res.render('admin/dashboard', {
+      userCount: allUsers.length,
+      productCount: allProducts.length,
+      reports,
+      products: allProducts
+    });
+  } catch (err) {
+    console.error('❌ Error loading admin dashboard:', err);
+    res.status(500).send('Admin dashboard failed');
+  }
+});
+app.post('/admin/delete-artwork/:id', isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Product.findByIdAndDelete(id);
+    res.redirect('/admin/dashboard');
+  } catch (err) {
+    console.error('❌ Error deleting artwork:', err);
+    res.status(500).send('Failed to delete artwork');
+  }
+});
+app.post('/report', isLoggedIn, async (req, res) => {
+  const { reportedId, type, reason } = req.body;
+  await db.collection('reports').insertOne({
+    reportedId,
+    type,
+    reason,
+    reportedBy: req.session.user.username,
+    timestamp: new Date()
+  });
+  await logActivity(db, {
+  type: 'report',
+  description: `Artwork reported by @${req.session.user.username}`,
+  userId: req.session.user._id
+});
+  res.send("✅ Report submitted");
+});
+const PaymentRequest = require('./models/PaymentRequest');
+
+app.get('/admin', isLoggedIn, isAdmin, async (req, res) => {
+  const client = new MongoClient(process.env.MONGO_URI);
+  await client.connect();
+  const db = client.db('artify');
+
+  const [users, products, reports, pendingPayments] = await Promise.all([
+    db.collection('users').countDocuments(),
+    db.collection('products').countDocuments(),
+    db.collection('reports').find().sort({ timestamp: -1 }).limit(10).toArray(),
+    db.collection('pendingPayments').find({ status: 'pending' }).sort({ timestamp: -1 }).toArray()
+  ]);
+
+  const totalRevenue = products * 120;
+
+  res.render('adminDashboard', {
+    stats: {
+      totalUsers: users,
+      totalArtworks: products,
+      totalReports: reports.length,
+      totalRevenue,
+    },
+    reports,
+    pendingPayments
+  });
+
+  await client.close();
+});
 
 
+app.post('/admin/delete/:id', isLoggedIn, async (req, res) => {
+  const id = req.params.id;
+  const { type } = req.query;
+
+  try {
+    if (type === 'artwork') {
+      await Product.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+    } else if (type === 'user') {
+      await users.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+    }
+    res.redirect('/admin');
+  } catch (err) {
+    console.error('❌ Error deleting:', err);
+    res.status(500).send("Error deleting");
+  }
+});
 
 
+app.get('/settings', isLoggedIn, async (req, res) => {
+  const user = await users.findOne({ username: req.session.user.username });
 
+  // Placeholder: Fetch user's purchases if stored
+  const transactions = user.purchased || [];
+
+  res.render('settings', { user, transactions });
+});
+
+app.post('/settings/update', isLoggedIn, upload.single('profilePicture'), async (req, res) => {
+  const updates = {
+    username: req.body.username,
+    artistType: req.body.artistType
+  };
+
+  if (req.file) {
+    updates.profilePicture = '/uploads/' + req.file.filename;
+  }
+
+  await users.updateOne({ _id: req.session.user._id }, { $set: updates });
+
+  // Update session if username was changed
+  req.session.user.username = updates.username;
+
+  res.redirect('/settings');
+});
 
   // Start server after DB is ready
   server.listen(PORT, () => {
@@ -552,6 +684,11 @@ following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
     };
 
     await users.insertOne(newUser);
+    await logActivity(mongoose.connection.db, {
+  type: 'signup',
+  description: `New user @${newUser.username} signed up`,
+  userId: newUser._id
+});
 
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
@@ -605,6 +742,42 @@ app.get('/get-session', (req, res) => {
     res.send('❌ No session found');
   }
 });
+app.post('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.redirect('/'); // fallback
+    }
+    res.clearCookie('connect.sid'); // clear session cookie
+    res.redirect('/login');
+  });
+});
+app.get('/payment-success', (req, res) => {
+  res.render('payment-success');
+});
 
+app.get('/payment-failed', (req, res) => {
+  res.render('payment-failed');
+});
+// Show awaiting approval page
+app.get('/awaiting-approval/:reference', (req, res) => {
+  const reference = req.params.reference;
+  res.render('awaitingApproval', { reference });
+});
+app.post('/admin/payments/:id/approve', isLoggedIn, isAdmin, async (req, res) => {
+  const client = new MongoClient(process.env.MONGO_URI);
+  await client.connect();
+  const db = client.db('artify');
+  const pendingPayments = db.collection('pendingPayments');
 
+  await pendingPayments.updateOne(
+    { _id: new ObjectId(req.params.id) },
+    { $set: { status: "success" } }
+  );
+
+  // You can optionally trigger product ownership update here, or wait for callback
+
+  await client.close();
+  res.redirect('/admin');
+});
 
